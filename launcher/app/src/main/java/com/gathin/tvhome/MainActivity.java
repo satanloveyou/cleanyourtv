@@ -363,6 +363,39 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private RecyclerView.OnScrollListener pendingFocusScroll;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private static final int WALLPAPER_STARTUP_RETRY_LIMIT = 20;
+    private int wallpaperStartupRetryAttempts;
+    private final Runnable retryStartupWallpaper = new Runnable() {
+        @Override public void run() {
+            if (!resumed || isFinishing() || isDestroyed()
+                    || wallpaperPlayer == null || !wallpaperPlayer.needsStartupRetry()) return;
+            File dir = Config.dir(MainActivity.this);
+            if (dir == null) {
+                scheduleStartupWallpaperRetry();
+                return;
+            }
+            File configFile = new File(dir, Config.FILE_NAME);
+            if (!configFile.isFile() || !configFile.canRead()) {
+                scheduleStartupWallpaperRetry();
+                return;
+            }
+            Config refreshed = Config.load(MainActivity.this);
+            if (!refreshed.wallpaperEnabled) return;
+            if (!refreshed.wallpapers.isEmpty() || refreshed.wallpaper != null) {
+                recreate();
+                return;
+            }
+            if (refreshed.overlayApplied && refreshed.wallpaperRotationMinutes <= 0) return;
+            scheduleStartupWallpaperRetry();
+        }
+    };
+
+    private void scheduleStartupWallpaperRetry() {
+        if (!resumed || wallpaperStartupRetryAttempts >= WALLPAPER_STARTUP_RETRY_LIMIT) return;
+        wallpaperStartupRetryAttempts++;
+        handler.removeCallbacks(retryStartupWallpaper);
+        handler.postDelayed(retryStartupWallpaper, 1_000L);
+    }
     /** Refreshes the network pill when the connection changes: at boot Wi-Fi often connects after Home is shown. */
     private final ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback() {
         @Override
@@ -1139,6 +1172,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (gameDay != null) gameDay.start();
         sky.update();
         wallpaperPlayer.start();
+        scheduleStartupWallpaperRetry();
         handler.postDelayed(minuteTick, MINUTE_MS);
         if (festive && lamp != null) {
             lamp.start();
@@ -1306,6 +1340,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onPause() {
         super.onPause();
         resumed = false;
+        handler.removeCallbacks(retryStartupWallpaper);
+        wallpaperStartupRetryAttempts = 0;
         // No UP reaches a paused Home, so a vendor-key hold it saw go down would still open its app later.
         // Only Home's own share is dropped: a key service that saw the same DOWN keeps its hold.
         RemoteKeys.release(this);
@@ -1379,6 +1415,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        handler.removeCallbacks(retryStartupWallpaper);
         RemoteKeys.release(this);
         cancelHoldOk();
         if (gameDay != null) gameDay.shutdown();

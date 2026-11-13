@@ -35,6 +35,7 @@ final class WallpaperPlayer {
     private final ImageView image;
     private final int backgroundColor;
     private final List<File> files;
+    private final boolean startupFilesMissing;
     private final long interval;
     private final String order;
     private final SharedPreferences preferences;
@@ -66,6 +67,7 @@ final class WallpaperPlayer {
         this.root = root;
         backgroundColor = config.backgroundColor;
         files = new ArrayList<>(config.wallpapers);
+        startupFilesMissing = config.wallpaperEnabled && files.isEmpty();
         interval = config.wallpaperRotationMinutes * 60_000L;
         bitmapConfig = config.wallpaperTrueColor ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565;
         // The dim is painted into the picture (decode), so no full-screen shade layer is drawn on every frame.
@@ -96,6 +98,11 @@ final class WallpaperPlayer {
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             showFirst();
         }
+    }
+
+    /** True only when the initial theme image list was empty during Home startup. */
+    boolean needsStartupRetry() {
+        return startupFilesMissing;
     }
 
     /**
