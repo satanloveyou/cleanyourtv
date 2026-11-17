@@ -6,6 +6,13 @@
         <item name="android:windowAnimationStyle">@null</item>
     </style>
 
+    <!-- Home keeps Android's native status bar visible over the wallpaper; other activities retain fullscreen. -->
+    <style name="Theme.TvHome.Home" parent="Theme.TvHome">
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+
     <!-- Frosted pill, tvOS style. -->
     <style name="TopButtonBase">
         <item name="android:layout_width">wrap_content</item>
