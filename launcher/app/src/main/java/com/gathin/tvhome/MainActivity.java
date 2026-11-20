@@ -474,7 +474,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private String clockFormat = "system";
     private java.util.Map<Integer, String> homeHoldAppKeys = java.util.Collections.emptyMap();
 
-    @Override
     private void configureTransparentStatusBar() {
         Window window = getWindow();
         window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
