@@ -457,7 +457,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             // tvOS-style tile: a large centred mark, no caption inside the card.
             View icon = v.findViewById(R.id.icon);
             FrameLayout.LayoutParams iconLp = (FrameLayout.LayoutParams) icon.getLayoutParams();
-            iconLp.width = iconLp.height = Math.round(h * ICON_SHARE);
+            iconLp.width = iconLp.height = Math.round(h * (appleTvTiles ? APPLE_TV_ICON_SHARE : ICON_SHARE));
             iconLp.bottomMargin = 0;
             icon.setLayoutParams(iconLp);
         } else if (h < Math.round(DESIGN_H_DP * density)) {
@@ -512,7 +512,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         boolean showBanner = e.banner != null && (!appleTvTiles || e.kind == Entry.CARD);
         h.card.setBackground(showBanner && e.banner.getOpacity() == PixelFormat.OPAQUE ? null : h.cardBackground);
         if (uniformTiles && !showBanner) {
-            if (e.backdrop == null) e.backdrop = backdrop(e.icon, ambientColorAt(position));
+            if (e.backdrop == null) e.backdrop = backdrop(e.icon, ambientColorAt(position),
+                    appleTvTiles ? APPLE_TV_ICON_SHARE : ICON_SHARE);
             GradientDrawable tile = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, e.backdrop);
             if (appleTvTiles) tile.setCornerRadius(cornerRadius(h.card.getWidth(), ctx.getResources().getDisplayMetrics().density, true));
             h.card.setBackground(tile);
@@ -726,6 +727,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     /** Share of the tile height the icon takes in uniform_tiles mode (onCreateViewHolder). */
     private static final float ICON_SHARE = 0.62f;
+    private static final float APPLE_TV_ICON_SHARE = 0.72f;
 
     /**
      * The colour covering most of an icon, for a card that should read as that app: a small saturated badge
@@ -776,8 +778,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
      * square), the card takes that colour, so the mark reads as filling the tile as on tvOS. Otherwise a
      * gradient of the icon's main colour, deepened so the mark stands out. The card clips the corners.
      */
-    private static int[] backdrop(Drawable live, int fallback) {
-        int[] plate = iconPlate(live);
+    private static int[] backdrop(Drawable live, int fallback, float iconShare) {
+        int[] plate = iconPlate(live, iconShare);
         if (plate != null) return plate;
         float[] hsv = new float[3];
         Color.colorToHSV(fallback, hsv);
@@ -794,7 +796,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
      * card's top and bottom edges so the mark reads as filling the tile; null when the icon has no
      * opaque plate (a bare mark on transparency).
      */
-    private static int[] iconPlate(Drawable live) {
+    private static int[] iconPlate(Drawable live, float iconShare) {
         if (live == null) return null;
         Drawable d = live.getConstantState() != null ? live.getConstantState().newDrawable().mutate() : live;
         Rect saved = new Rect(d.getBounds());
@@ -823,8 +825,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (a == 0 || b == 0) return null;
         // The sampled rows sit at these heights of the tile; extend the line through them to its edges. A row
         // taken further in sits on artwork-side plate, so its slope is less certain: cap how far it reaches.
-        float margin = (1f - ICON_SHARE) / 2f;
-        float yA = margin + ICON_SHARE * topRow / n, yB = margin + ICON_SHARE * bottomRow / n;
+        float margin = (1f - iconShare) / 2f;
+        float yA = margin + iconShare * topRow / n, yB = margin + iconShare * bottomRow / n;
         float t0 = -yA / (yB - yA), t1 = (1f - yA) / (yB - yA);
         if (topRow != 7 || bottomRow != n - 8) {
             t0 = Math.max(-0.35f, t0);
