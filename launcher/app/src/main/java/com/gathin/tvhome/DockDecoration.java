@@ -18,6 +18,7 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
     private final float density;
     private final Paint band = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint edge = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint sheen = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
 
     /** Extra band below the tiles for their names (always_show_names), in px. */
@@ -28,6 +29,7 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
     private final boolean evenPadding;
     /** The band's top and bottom the glass gradient was made for; it is remade when they move. */
     private float shaderTop = Float.NaN, shaderBottom = Float.NaN;
+    private float sheenTop = Float.NaN, sheenBottom = Float.NaN;
     /** Draw the band and its edge (config.xml dock_band); false leaves the tiles floating on the wallpaper. */
     private final boolean bandVisible;
     /** single_row: the tiles after the dock share its row, so they take the same offsets to stay level with it. */
@@ -57,10 +59,15 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
         this.lightGlass = lightGlass;
         this.evenPadding = evenPadding;
         this.bandVisible = bandVisible;
-        band.setColor(translucent ? 0x8C121014 : (Math.round(opacity * 2.55f) << 24) | 0x141416);
+        if (appleTvTiles) {
+            // A light floating material, rather than the older heavy dark dock slab.
+            band.setColor(translucent ? 0x50101824 : (Math.round(opacity * 1.7f) << 24) | 0x101622);
+        } else {
+            band.setColor(translucent ? 0x8C121014 : (Math.round(opacity * 2.55f) << 24) | 0x141416);
+        }
         edge.setStyle(Paint.Style.STROKE);
-        edge.setStrokeWidth(density);
-        edge.setColor(lightGlass ? 0x38FFFFFF : translucent ? 0x26FFFFFF : 0x1FFFFFFF);
+        edge.setStrokeWidth((appleTvTiles ? 1.15f : 1f) * density);
+        edge.setColor(appleTvTiles ? 0x46FFFFFF : lightGlass ? 0x38FFFFFF : translucent ? 0x26FFFFFF : 0x1FFFFFFF);
     }
 
     /** Concentric corners: the band's radius is the tiles' radius plus the band's padding around them. */
@@ -149,6 +156,19 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
             shaderBottom = rect.bottom;
         }
         c.drawRoundRect(rect, radius, radius, band);
+        if (appleTvTiles) {
+            if (rect.top != sheenTop || rect.bottom != sheenBottom) {
+                sheen.setShader(new LinearGradient(0, rect.top, 0, rect.top + Math.max(1f, rect.height() * 0.48f),
+                        0x22FFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP));
+                sheenTop = rect.top;
+                sheenBottom = rect.bottom;
+            }
+            // A small specular wash over the upper lip gives the dock depth without a live blur pass.
+            c.save();
+            c.clipRect(rect.left, rect.top, rect.right, rect.top + rect.height() * 0.48f);
+            c.drawRoundRect(rect, radius, radius, sheen);
+            c.restore();
+        }
         c.drawRoundRect(rect, radius, radius, edge);
     }
 }
