@@ -138,6 +138,7 @@ Implemented on the feature branch:
 - Reduced focus zoom to 1.09, softened the vertical lift/elevation and disabled the extra banner zoom in this mode.
 - Added a lighter focus-glass sheen and fewer glow rings.
 - In cinematic mode, use the real landscape app banner as a full-size Hero background where available. The tile itself still displays the app icon; icon-only apps use the existing softened HeroArt fallback.
+- Use a 58sp Hero title and omit the internal `Last opened` history line in Apple TV mode.
 - Clear Hero drawable wrappers together with the existing bitmap cache during reload and memory-pressure release.
 - Add a lighter floating Dock material with a thin bright edge and a static top sheen; legacy Dock drawing remains unchanged when Apple TV mode is off.
 - Preserved the original 3.6.0 geometry and motion paths when the flag is off.

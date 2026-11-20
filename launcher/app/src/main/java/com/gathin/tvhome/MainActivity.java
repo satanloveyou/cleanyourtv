@@ -2063,9 +2063,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * scrimPercent of its strength (cinematic_scrim). cinematic_art 0 leaves the artwork out, 0 percent the scrim.
      */
     private void setUpCinematicShelf(int scrimPercent) {
-        heroName.setTextSize(TypedValue.COMPLEX_UNIT_SP, 68f);
+        heroName.setTextSize(TypedValue.COMPLEX_UNIT_SP, appleTvTiles ? 58f : 68f);
         heroName.setLetterSpacing(-0.025f);
-        heroMeta.setVisibility(View.INVISIBLE);   // keeps its height, so the name does not jump when it fills in
+        // Apple TV's shelf is content-led; do not show the launcher's internal "Last opened" history line.
+        heroMeta.setVisibility(appleTvTiles ? View.GONE : View.INVISIBLE);
         heroDots.setVisibility(heroDotsShown ? View.VISIBLE : View.GONE);
         heroArt.setVisibility(heroArtAlpha > 0f ? View.VISIBLE : View.GONE);
         // One stretched bitmap: apply its alpha while drawing instead of through an offscreen buffer.
@@ -2166,6 +2167,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** "Last opened yesterday, 9:40 PM", the time in white; nothing (but the same height) when it was never seen. */
     private void updateHeroMeta(int position) {
+        if (appleTvTiles) {
+            heroMeta.setVisibility(View.GONE);
+            return;
+        }
         long when = LastOpened.get(this, adapter.packageAt(position));
         if (when <= 0) {
             heroMeta.setVisibility(View.INVISIBLE);
