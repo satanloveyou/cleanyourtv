@@ -100,12 +100,17 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     static final float FOCUS_SCALE = 1.10f;
     /** Design size of a tile (dp); tiles shrink from here when the columns don't fit, see tileWidthPx. */
     static final float DESIGN_W_DP = 180f, DESIGN_H_DP = 101f;
+    static final float APPLE_TV_DESIGN_H_DP = 180f;
 
     /**
-     * Tile width for a grid of this inner width: the cell minus room for the focus zoom and the glass
-     * highlight, capped at the design size so 4 columns on a 1080p TV look exactly as before.
+     * Tile width for a grid of this inner width: the cell minus room for focus zoom and the glass
+     * highlight, capped at the design size.
      */
     static int tileWidthPx(int innerWidthPx, int columns, float density) {
+        return tileWidthPx(innerWidthPx, columns, density, false);
+    }
+
+    static int tileWidthPx(int innerWidthPx, int columns, float density, boolean appleTvTiles) {
         int design = Math.round(DESIGN_W_DP * density);
         if (innerWidthPx <= 0 || columns <= 0) return design;
         int cell = innerWidthPx / columns;
@@ -114,7 +119,12 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     static int tileHeightPx(int tileWidthPx) {
-        return Math.round(tileWidthPx * DESIGN_H_DP / DESIGN_W_DP);
+        return tileHeightPx(tileWidthPx, false);
+    }
+
+    static int tileHeightPx(int tileWidthPx, boolean appleTvTiles) {
+        float designHeight = appleTvTiles ? APPLE_TV_DESIGN_H_DP : DESIGN_H_DP;
+        return Math.round(tileWidthPx * designHeight / DESIGN_W_DP);
     }
 
     /** Height of one grid item: the tile, the name label under it and the item's own padding. */
@@ -155,13 +165,19 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
      */
     static int tileWidthPx(int innerWidthPx, int gridHeightPx, int columns, int rowsBelowDock, boolean dockTitle,
                            boolean dockRow, float density) {
-        int w = tileWidthPx(innerWidthPx, columns, density);
+        return tileWidthPx(innerWidthPx, gridHeightPx, columns, rowsBelowDock, dockTitle, dockRow, density, false);
+    }
+
+    static int tileWidthPx(int innerWidthPx, int gridHeightPx, int columns, int rowsBelowDock, boolean dockTitle,
+                           boolean dockRow, float density, boolean appleTvTiles) {
+        int w = tileWidthPx(innerWidthPx, columns, density, appleTvTiles);
         if (gridHeightPx <= 0 || rowsBelowDock <= 0) return w;
         float reserved = (dockRow ? DOCK_EXTRA_DP + BOTTOM_ROOM_DP + (dockTitle ? TITLE_ROOM_DP : 0)
                 : TOP_ROOM_DP + COMPACT_BOTTOM_ROOM_DP) * density;
         float perItem = (gridHeightPx - reserved) / (rowsBelowDock + 1);
         float tileH = perItem - (dockRow ? ITEM_EXTRA_DP : COMPACT_ITEM_EXTRA_DP) * density;
-        int byHeight = Math.round(tileH * DESIGN_W_DP / DESIGN_H_DP);
+        float designHeight = appleTvTiles ? APPLE_TV_DESIGN_H_DP : DESIGN_H_DP;
+        int byHeight = Math.round(tileH * DESIGN_W_DP / designHeight);
         // Shrink at most to MIN_HEIGHT_FIT of the width-only size. Below that the tiles look lost in their wide
         // columns (2 rows under a titled dock came out at 80dp); the rows that still don't fit run off the bottom
         // and scroll, and MainActivity keeps the title's room above the dock.
@@ -218,6 +234,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final Map<String, String> appLabels, appBanners;
     /** Every app tile is its icon on a card tinted from that icon, never its banner (config.xml, uniform_tiles). */
     private final boolean uniformTiles;
+    private final boolean appleTvTiles;
     /** Packages drawn from their icon and name even when they have a banner (config.xml icon_tiles). */
     private final Set<String> iconTiles;
     private final List<Entry> items = new ArrayList<>();
@@ -247,7 +264,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.tileMenu = cfg.tileMenu;
         this.appLabels = cfg.appLabels;
         this.appBanners = cfg.appBanners;
-        this.uniformTiles = cfg.uniformTiles;
+        this.uniformTiles = cfg.uniformTiles || cfg.appleTvTiles;
+        this.appleTvTiles = cfg.appleTvTiles;
         // Tiles keep their identity across reload(), so a focused tile stays on its app instead of
         // its view being rebound to whatever app now sits in that slot.
         setHasStableIds(true);
@@ -415,7 +433,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         float density = parent.getResources().getDisplayMetrics().density;
         int width = parent.getWidth() > 0 ? parent.getWidth() : parent.getMeasuredWidth();
         int inner = width - parent.getPaddingLeft() - parent.getPaddingRight();
-        int w = tileWidthPx(inner, parent.getHeight(), dockSize, rowsBelowDock, dockTitle, dockRow, density), h = tileHeightPx(w);
+        int w = tileWidthPx(inner, parent.getHeight(), dockSize, rowsBelowDock, dockTitle, dockRow, density, appleTvTiles),
+                h = tileHeightPx(w, appleTvTiles);
         View card = v.findViewById(R.id.card);
         ViewGroup.LayoutParams cardLp = card.getLayoutParams();
         cardLp.width = w;
@@ -452,7 +471,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             View label = v.findViewById(R.id.label);
             label.setPadding(label.getPaddingLeft(), label.getPaddingTop(), label.getPaddingRight(), Math.round(4f * density));
         }
-        return new Holder(v, listener, animations, advancedEffects, reducedMotion, restNameAlpha, focusOvershoot);
+        return new Holder(v, listener, animations, advancedEffects, reducedMotion, restNameAlpha, focusOvershoot, appleTvTiles);
     }
 
     @Override
@@ -484,16 +503,18 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         h.name.setAlpha(focused ? 1f : restNameAlpha);
         h.card.setScaleX(focused && animations ? focusScale() : 1f);
         h.card.setScaleY(focused && animations ? focusScale() : 1f);
-        h.card.setTranslationY(focused && advancedEffects && !dockKind ? -4f * ctx.getResources().getDisplayMetrics().density : 0f);
-        h.card.setTranslationZ(focused && advancedEffects ? 8f * ctx.getResources().getDisplayMetrics().density : 0f);
-        h.banner.setScaleX(focused && advancedEffects ? 1.035f : 1f);
-        h.banner.setScaleY(focused && advancedEffects ? 1.035f : 1f);
+        h.card.setTranslationY(focused && advancedEffects && !dockKind ? -(appleTvTiles ? 2f : 4f) * ctx.getResources().getDisplayMetrics().density : 0f);
+        h.card.setTranslationZ(focused && advancedEffects ? (appleTvTiles ? 6f : 8f) * ctx.getResources().getDisplayMetrics().density : 0f);
+        h.banner.setScaleX(focused && advancedEffects && !appleTvTiles ? 1.035f : 1f);
+        h.banner.setScaleY(focused && advancedEffects && !appleTvTiles ? 1.035f : 1f);
         // A fully opaque banner covers the whole card (centerCrop), so the card's own fill under it is drawn for
         // nothing on every frame; keep it under banners with transparent parts and under icon tiles.
         h.card.setBackground(e.banner != null && e.banner.getOpacity() == PixelFormat.OPAQUE ? null : h.cardBackground);
         if (uniformTiles && e.banner == null) {
             if (e.backdrop == null) e.backdrop = backdrop(e.icon, ambientColorAt(position));
-            h.card.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, e.backdrop));
+            GradientDrawable tile = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, e.backdrop);
+            if (appleTvTiles) tile.setCornerRadius(cornerRadius(h.card.getWidth(), ctx.getResources().getDisplayMetrics().density, true));
+            h.card.setBackground(tile);
         }
         if (e.banner != null) {
             h.icon.setImageDrawable(null);
@@ -677,7 +698,11 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     float focusScale() {
-        return !animations ? 1f : advancedEffects ? 1.12f : 1.10f;
+        return !animations ? 1f : appleTvTiles ? 1.09f : advancedEffects ? 1.12f : 1.10f;
+    }
+
+    float tileCornerRadius(int tileWidthPx, float density) {
+        return cornerRadius(tileWidthPx, density, appleTvTiles);
     }
 
     /** A vivid colour sampled from the app's banner (or icon), cached per entry; a card's accent when it set one. */
@@ -897,7 +922,12 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     /** Corner radius for a tile of this width: 16dp at the design width, proportionally less when smaller. */
     static float cornerRadius(int tileWidthPx, float density) {
-        return 16f * density * Math.min(1f, tileWidthPx / (DESIGN_W_DP * density));
+        return cornerRadius(tileWidthPx, density, false);
+    }
+
+    static float cornerRadius(int tileWidthPx, float density, boolean appleTvTiles) {
+        float designRadius = appleTvTiles ? 30f : 16f;
+        return designRadius * density * Math.min(1f, tileWidthPx / (DESIGN_W_DP * density));
     }
 
     static final class Holder extends RecyclerView.ViewHolder {
@@ -914,11 +944,12 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         /** Alpha of the name while the tile is not focused (always_show_names). */
         final float restNameAlpha;
         final boolean overshoot;
+        final boolean appleTvTiles;
         /** A dock tile: it grows in place without advanced_effects' lift, which reads as off-centre in the band (#2135). */
         boolean inDock;
 
         Holder(View v, TileListener listener, boolean animations, boolean advancedEffects,
-               boolean reducedMotion, float restNameAlpha, boolean overshoot) {
+               boolean reducedMotion, float restNameAlpha, boolean overshoot, boolean appleTvTiles) {
             super(v);
             card = v.findViewById(R.id.card);
             cardBackground = card.getBackground();
@@ -931,13 +962,15 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             this.reducedMotion = reducedMotion;
             this.restNameAlpha = restNameAlpha;
             this.overshoot = overshoot;
+            this.appleTvTiles = appleTvTiles;
 
             final float density = v.getResources().getDisplayMetrics().density;
             card.setOutlineProvider(new ViewOutlineProvider() {
                 @Override
                 public void getOutline(View view, Outline outline) {
-                    // 16dp at the design width, scaled down with the tile so small tiles keep the same shape.
-                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), cornerRadius(view.getWidth(), density));
+                    // Apple TV tiles use the softer, more generous icon silhouette.
+                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(),
+                            cornerRadius(view.getWidth(), density, appleTvTiles));
                 }
             });
             card.setClipToOutline(true);
@@ -954,7 +987,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 view.animate().cancel();
                 banner.animate().cancel();
                 name.animate().cancel();
-                float scale = !animations ? 1f : advancedEffects ? 1.12f : 1.10f;
+                float scale = !animations ? 1f : appleTvTiles ? 1.09f : advancedEffects ? 1.12f : 1.10f;
                 float s = focused ? scale : 1f;
                 if (!animations) {
                     view.setScaleX(1f);
@@ -969,8 +1002,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     // A short zoom with no hardware layer: building a layer for so short an animation costs more
                     // frames than it saves. The name just appears instead of fading.
                     view.animate().scaleX(s).scaleY(s)
-                            .translationY(focused && advancedEffects && !inDock ? -4f * density : 0f)
-                            .translationZ(focused && advancedEffects ? 8f * density : 0f)
+                            .translationY(focused && advancedEffects && !inDock ? -(appleTvTiles ? 2f : 4f) * density : 0f)
+                            .translationZ(focused && advancedEffects ? (appleTvTiles ? 6f : 8f) * density : 0f)
                             .setDuration(focused ? Motion.REDUCED_MS : 60)
                             .setInterpolator(new DecelerateInterpolator())
                             .start();
@@ -981,13 +1014,16 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     if (focused) name.setTranslationY(density * 4f);
                 } else {
                     view.animate().scaleX(s).scaleY(s)
-                            .translationY(focused && advancedEffects && !inDock ? -4f * density : 0f)
-                            .translationZ(focused && advancedEffects ? 8f * density : 0f)
-                            .setDuration(advancedEffects ? (focused ? 220 : 170) : (focused ? 260 : 180))
-                            .setInterpolator(focused && !overshoot ? new DecelerateInterpolator(1.5f)
+                            .translationY(focused && advancedEffects && !inDock
+                                    ? -(appleTvTiles ? 2f : 4f) * density : 0f)
+                            .translationZ(focused && advancedEffects ? (appleTvTiles ? 6f : 8f) * density : 0f)
+                            .setDuration(appleTvTiles ? (focused ? 190 : 145)
+                                    : advancedEffects ? (focused ? 220 : 170) : (focused ? 260 : 180))
+                            .setInterpolator(appleTvTiles || focused && !overshoot
+                                    ? new DecelerateInterpolator(1.5f)
                                     : new OvershootInterpolator(focused ? (advancedEffects ? 0.7f : 1.6f) : 0f))
                             .withLayer().start();
-                    if (advancedEffects) {
+                    if (advancedEffects && !appleTvTiles) {
                         banner.animate().scaleX(focused ? 1.035f : 1f).scaleY(focused ? 1.035f : 1f)
                                 .setDuration(280).start();
                     }

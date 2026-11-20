@@ -124,3 +124,22 @@ The goal is not to recolour the existing launcher. CleanYourTV 3.7 should read a
 ## Current implementation note
 
 This document records the design direction and constraints. A checklist item is not complete until its code and validation evidence are present in this branch.
+
+## Implementation progress
+
+### First slice - Apple TV tile and focus mode
+
+Implemented on the feature branch:
+
+- Added the opt-in `apple_tv_tiles` theme key. Its default is false, so legacy themes retain their 16:9 tile geometry.
+- Apple TV mode uses square icon-led app cards and automatically enables the existing uniform icon treatment.
+- Increased the tile corner radius and aligned the focus outline, glass highlight and Dock band with the new shape.
+- Reduced focus zoom to 1.09, softened the vertical lift/elevation and disabled the extra banner zoom in this mode.
+- Added a lighter focus-glass sheen and fewer glow rings.
+- Preserved the original 3.6.0 geometry and motion paths when the flag is off.
+
+### Preview theme overlay
+
+The initial mode can be enabled without changing the built-in defaults by using the companion `apple-tv-preview-config.json` as a theme's `config.json`. It combines the new square tile mode with the existing cinematic shelf and glass Dock. The Hero image in this first slice is still the existing low-resolution colour treatment; full-resolution local Hero artwork is a later implementation slice.
+
+Not yet complete: the full-content Hero artwork provider, Dock material polish, header/panel restyle and on-device validation. No screenshot or performance claim is made until checked on the Tanix.

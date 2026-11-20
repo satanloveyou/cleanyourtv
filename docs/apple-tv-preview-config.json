@@ -1,0 +1,21 @@
+{
+  "apple_tv_tiles": true,
+  "cinematic_home": true,
+  "cinematic_dots": false,
+  "cinematic_art": 45,
+  "cinematic_scrim": 80,
+  "dock_title": true,
+  "dock_glass": true,
+  "dock_band": true,
+  "dock_even_padding": true,
+  "dock_opacity": 65,
+  "icon_only_buttons": true,
+  "icon_only_inputs": true,
+  "show_greeting": false,
+  "header_white": true,
+  "ambient_glow": true,
+  "app_glow": false,
+  "advanced_effects": true,
+  "focus_overshoot": false,
+  "glass_style": "glass"
+}

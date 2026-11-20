@@ -29,6 +29,7 @@ public class GlassView extends View {
     /** glass_style rim or halo: no sheen and no fill, only the crisp rim (and, for halo, a lighter outer glow). */
     private boolean flat;
     private boolean halo;
+    private boolean appleTvStyle;
 
     public GlassView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -44,15 +45,23 @@ public class GlassView extends View {
         setLayerType(LAYER_TYPE_HARDWARE, null);
     }
 
+    /** Apple TV mode uses a lighter rim and a more restrained edge glow. */
+    void setAppleTvStyle(boolean enabled) {
+        appleTvStyle = enabled;
+        rim.setStrokeWidth((enabled ? 1.15f : flat ? 2f : 1.5f) * density);
+        if (enabled && glowAlpha == 0x30) glowAlpha = 0x26;
+        invalidate();
+    }
+
     /** Tints the rim and the outer glow; 0 restores the plain white glass. */
     void setAccent(int argb) {
         if (argb == 0) {
             glowRgb = 0xFFFFFF;
-            glowAlpha = 0x30;
+            glowAlpha = appleTvStyle ? 0x26 : 0x30;
             rim.setColor(0xCCFFFFFF);
         } else {
             glowRgb = argb & 0xFFFFFF;
-            glowAlpha = 0x70;
+            glowAlpha = appleTvStyle ? 0x58 : 0x70;
             // The rim is the accent lifted towards white, so the edge still reads as glass, not paint.
             int r = (((glowRgb >> 16) & 0xFF) + 255 * 2) / 3, g = (((glowRgb >> 8) & 0xFF) + 255 * 2) / 3,
                     b = ((glowRgb & 0xFF) + 255 * 2) / 3;
@@ -65,7 +74,7 @@ public class GlassView extends View {
     void setStyle(String style) {
         flat = Config.GLASS_RIM.equals(style) || Config.GLASS_HALO.equals(style);
         halo = Config.GLASS_HALO.equals(style);
-        rim.setStrokeWidth((flat ? 2f : 1.5f) * density);
+        rim.setStrokeWidth((appleTvStyle ? 1.15f : flat ? 2f : 1.5f) * density);
         invalidate();
     }
 
@@ -77,8 +86,11 @@ public class GlassView extends View {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        fill.setShader(new LinearGradient(0, 0, 0, h, 0x3DFFFFFF, 0x12FFFFFF, Shader.TileMode.CLAMP));
-        specular.setShader(new LinearGradient(0, 0, 0, h * 0.45f, 0x66FFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP));
+        fill.setShader(new LinearGradient(0, 0, 0, h,
+                appleTvStyle ? 0x2AFFFFFF : 0x3DFFFFFF,
+                appleTvStyle ? 0x0BFFFFFF : 0x12FFFFFF, Shader.TileMode.CLAMP));
+        specular.setShader(new LinearGradient(0, 0, 0, h * 0.45f,
+                appleTvStyle ? 0x48FFFFFF : 0x66FFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP));
     }
 
     @Override
@@ -90,7 +102,7 @@ public class GlassView extends View {
         // strokes left visible bands once the glow took an app's colour at a stronger alpha. The hardware layer
         // caches the result, so the rings cost one draw, not one per frame of the spring.
         if (!flat || halo) {
-            int rings = 12;
+            int rings = appleTvStyle ? 8 : 12;
             float step = inset / rings;
             int alpha = flat ? glowAlpha / 2 : glowAlpha;
             glow.setStrokeWidth(step + 0.5f);
