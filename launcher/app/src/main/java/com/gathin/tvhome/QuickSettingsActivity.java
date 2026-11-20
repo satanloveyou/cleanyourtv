@@ -18,6 +18,7 @@ import android.widget.Toast;
  * closes the panel.
  */
 public final class QuickSettingsActivity extends Activity {
+    private boolean appleTvStyle;
     @Override
     protected void attachBaseContext(android.content.Context base) {
         super.attachBaseContext(LauncherLocale.wrap(base));   // locale
@@ -28,6 +29,8 @@ public final class QuickSettingsActivity extends Activity {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         setContentView(R.layout.activity_quick_settings);
+        appleTvStyle = Config.load(this).appleTvTiles;
+        if (appleTvStyle) findViewById(R.id.panel).setBackgroundResource(R.drawable.apple_tv_panel_bg);
         if (getResources().getBoolean(R.bool.rtl_menu_bar)) {
             View panel = findViewById(R.id.panel);
             android.widget.FrameLayout.LayoutParams position =
@@ -69,8 +72,15 @@ public final class QuickSettingsActivity extends Activity {
 
     private void addRow(LinearLayout rows, int icon, int title, int status, Intent target) {
         View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
-        ((ImageView) row.findViewById(R.id.icon)).setImageResource(icon);
-        ((TextView) row.findViewById(R.id.title)).setText(title);
+        ImageView iconView = row.findViewById(R.id.icon);
+        iconView.setImageResource(icon);
+        TextView titleView = row.findViewById(R.id.title);
+        titleView.setText(title);
+        if (appleTvStyle) {
+            row.setBackgroundResource(R.drawable.apple_tv_input_row_bg);
+            iconView.setColorFilter(android.graphics.Color.WHITE);
+            titleView.setTextColor(android.graphics.Color.WHITE);
+        }
         row.findViewById(R.id.dot).setVisibility(View.GONE);
         TextView hint = row.findViewById(R.id.status);
         if (status != 0) hint.setText(status);

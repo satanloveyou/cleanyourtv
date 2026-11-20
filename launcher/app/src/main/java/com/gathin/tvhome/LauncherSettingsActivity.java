@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
@@ -52,6 +53,7 @@ public final class LauncherSettingsActivity extends Activity {
         setContentView(R.layout.activity_launcher_settings);
         choices = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE);
         Config config = Config.load(this);
+        if (config.appleTvTiles) applyAppleTvSettingsStyle();
         View reorderChoice = findViewById(R.id.reorderChoice);
         reorderChoice.setVisibility(config.launcherSettingsButton ? View.VISIBLE : View.GONE);
         reorderChoice.setOnClickListener(v -> {
@@ -175,6 +177,25 @@ public final class LauncherSettingsActivity extends Activity {
         refresh();
         if (config.launcherSettingsButton) reorderChoice.requestFocus();
         else columnChoices[Math.max(0, Math.min(columns - 4, 3))].requestFocus();
+    }
+
+    private void applyAppleTvSettingsStyle() {
+        View content = ((android.view.ViewGroup) findViewById(android.R.id.content)).getChildAt(0);
+        if (content != null) {
+            content.setBackgroundColor(0xFF0B121B);
+            applyAppleTvControlBackgrounds(content);
+        }
+    }
+
+    private void applyAppleTvControlBackgrounds(View view) {
+        if (view.isFocusable() && view instanceof TextView) {
+            view.setBackgroundResource(R.drawable.apple_tv_settings_choice_bg);
+            ((TextView) view).setTextColor(Color.WHITE);
+        }
+        if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) applyAppleTvControlBackgrounds(group.getChildAt(i));
+        }
     }
 
     private void reverseRow(TextView[] views) {

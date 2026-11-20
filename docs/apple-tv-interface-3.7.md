@@ -141,8 +141,16 @@ Implemented on the feature branch:
 - Add a lighter floating Dock material with a thin bright edge and a static top sheen; legacy Dock drawing remains unchanged when Apple TV mode is off.
 - Preserved the original 3.6.0 geometry and motion paths when the flag is off.
 
+### Shared Apple TV materials
+
+- Added lightweight, theme-gated panel, row, settings-choice and header-pill drawables.
+- Applied the same panel surface to Inputs, top-menu, app-action and module-card popups, Quick Settings, App Library and module-card prompts.
+- Restyled Launcher Settings focusable choices with a cool neutral focus treatment rather than the legacy green selector.
+- Kept header labels and icons white while focused so the translucent pill highlight does not turn their ink dark.
+- All of these changes are guarded by `apple_tv_tiles`; other themes keep the legacy surfaces.
+
 ### Preview theme overlay
 
-The initial mode can be enabled without changing the built-in defaults by using the companion `apple-tv-preview-config.json` as a theme's `config.json`. It combines the new square tile mode with the existing cinematic shelf and glass Dock. The Hero image in this first slice is still the existing low-resolution colour treatment; full-resolution local Hero artwork is a later implementation slice.
+The initial mode can be enabled without changing the built-in defaults by using the companion `apple-tv-preview-config.json` as a theme's `config.json`. It combines square icon-led cards, the cinematic shelf, full-size app banners in Hero where available, a floating glass Dock and the shared Apple TV material family.
 
-Not yet complete: the full-content Hero artwork provider, Dock material polish, header/panel restyle and on-device validation. No screenshot or performance claim is made until checked on the Tanix.
+Still outstanding: a true device screenshot, real Tanix navigation/performance validation, final visual tuning of top-level typography and any refinements found by device testing. No screenshot or performance improvement claim is made until checked on the Tanix.

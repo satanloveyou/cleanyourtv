@@ -718,7 +718,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (position < 0 || position >= items.size()) return 0xFF444444;
         Entry e = items.get(position);
         if (e.ambient == 0) {
-            e.ambient = uniformTiles && (appleTvTiles || e.banner == null)
+            e.ambient = uniformTiles && (e.banner == null || (appleTvTiles && e.icon != null))
                     ? dominantColor(e.icon) : vividColor(e.banner != null ? e.banner : e.icon);
         }
         return e.ambient;

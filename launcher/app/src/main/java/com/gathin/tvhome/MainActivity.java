@@ -965,6 +965,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
         }
         if (festive) applyFestiveSkin((TextView) btnInputs, (TextView) btnSettings);
+        if (appleTvTiles) {
+            applyAppleTvPill((TextView) btnInputs);
+            applyAppleTvPill(btnWifi);
+            applyAppleTvPill(btnVpn);
+            applyAppleTvPill((TextView) btnReorder);
+            applyAppleTvPill((TextView) btnLibraryTop);
+            applyAppleTvPill((TextView) btnSettings);
+        }
 
         // Hide the glass when focus leaves the tiles.
         // Taken off in onDestroy: recreate() keeps the window, and a listener left on it held every earlier Home.
@@ -1829,7 +1837,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         libraryFocusPending = false;
         libraryFromTopBar = false;
         libraryFromVpnPill = false;
-        appLibrary = new AppLibraryDialog(this, animations, reducedMotion, appLibrarySelection, libraryOkOpens, adapter::containsPackage, () -> reloadApps(false), () -> {
+        appLibrary = new AppLibraryDialog(this, animations, reducedMotion, appleTvTiles, appLibrarySelection, libraryOkOpens, adapter::containsPackage, () -> reloadApps(false), () -> {
             appLibrary = null;
             openPopup = null;
             if (libraryFromTopBar) {
@@ -3130,6 +3138,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** The open library came from the VPN pill (vpn_pill, no VPN app): closing it returns there while the pill still shows. */
     private boolean libraryFromVpnPill;
 
+    /** Apple TV header controls share a light glass surface and keep white ink while focused. */
+    private void applyAppleTvPill(TextView pill) {
+        if (pill == null) return;
+        pill.setBackgroundResource(R.drawable.apple_tv_pill_bg);
+        pill.setTextColor(Color.WHITE);
+        if (!festive) pill.setCompoundDrawableTintList(ColorStateList.valueOf(0xFFEAF6FF));
+    }
+
     /** Turns a labelled top pill into the round TopButtonIcon shape: no text, the icon centred by even padding. */
     private void makeIconOnly(TextView pill) {
         pill.setContentDescription(pill.getText());
@@ -3698,6 +3714,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private PopupWindow glassPopup(View panel, int width) {
+        if (appleTvTiles) panel.setBackgroundResource(R.drawable.apple_tv_panel_bg);
         final PopupWindow popup = new PopupWindow(panel, width, ViewGroup.LayoutParams.WRAP_CONTENT, true);
         popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));   // needed for Back to dismiss
         popup.setOutsideTouchable(true);
@@ -3733,8 +3750,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private View addInputRow(LinearLayout rows, PopupWindow popup, int iconRes, String title, int state, Runnable action) {
         View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
-        ((ImageView) row.findViewById(R.id.icon)).setImageResource(iconRes);
-        ((TextView) row.findViewById(R.id.title)).setText(title);
+        ImageView icon = row.findViewById(R.id.icon);
+        icon.setImageResource(iconRes);
+        TextView rowTitle = row.findViewById(R.id.title);
+        rowTitle.setText(title);
+        if (appleTvTiles) {
+            row.setBackgroundResource(R.drawable.apple_tv_input_row_bg);
+            icon.setColorFilter(Color.WHITE);
+            rowTitle.setTextColor(Color.WHITE);
+        }
         TextView status = row.findViewById(R.id.status);
         View dot = row.findViewById(R.id.dot);
         // This TV reports "standby" for every port whether or not something is plugged in, so only
@@ -3749,6 +3773,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             status.setVisibility(View.GONE);
             dot.setVisibility(View.GONE);
         }
+        if (appleTvTiles) status.setTextColor(0xCCFFFFFF);
         row.setOnClickListener(v -> {
             popup.dismiss();
             action.run();
@@ -3967,7 +3992,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         row.findViewById(R.id.icon).setVisibility(View.GONE);
         row.findViewById(R.id.dot).setVisibility(View.GONE);
         row.findViewById(R.id.status).setVisibility(View.GONE);
-        ((TextView) row.findViewById(R.id.title)).setText(title);
+        TextView rowTitle = row.findViewById(R.id.title);
+        rowTitle.setText(title);
+        if (appleTvTiles) {
+            row.setBackgroundResource(R.drawable.apple_tv_input_row_bg);
+            rowTitle.setTextColor(Color.WHITE);
+        }
         row.setOnClickListener(v -> {
             popup.dismiss();
             action.run();
@@ -4011,6 +4041,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (card == null) return;
 
         View panel = getLayoutInflater().inflate(R.layout.dialog_card_prompt, root, false);
+        if (appleTvTiles) panel.setBackgroundResource(R.drawable.apple_tv_panel_bg);
         boolean rtl = getResources().getBoolean(R.bool.rtl_menu_bar);
         if (rtl) panel.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         ((TextView) panel.findViewById(R.id.title)).setText(getString(R.string.card_prompt_title, card.appLabel));
@@ -4026,6 +4057,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 getString(R.string.card_prompt_identity, card.pkg, Cards.shortDigest(card.digest)));
         TextView keep = panel.findViewById(R.id.btnKeep);
         TextView show = panel.findViewById(R.id.btnShow);
+        if (appleTvTiles) {
+            applyAppleTvPill(keep);
+            applyAppleTvPill(show);
+        }
         if (rtl) {
             LinearLayout buttons = (LinearLayout) keep.getParent();
             buttons.removeAllViews();
