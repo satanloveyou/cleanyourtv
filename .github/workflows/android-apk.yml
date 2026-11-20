@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   build:
-    name: Test and build CleanYourTV 3.5
+    name: Test and build CleanYourTV 3.6
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
@@ -31,7 +31,7 @@ jobs:
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: cleanyourtv-3.5-fixed-apk
+          name: cleanyourtv-3.6-fixed-apk
           path: launcher/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14

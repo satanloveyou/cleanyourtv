@@ -247,7 +247,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private final Rect tileRect = new Rect();
     private final Rect revealRect = new Rect();
     // Static so they survive the activity being destroyed while another app is open (low-memory TVs,
-    // or Developer options â "Don't keep activities"); they only reset when the process dies.
+    // or Developer options → "Don't keep activities"); they only reset when the process dies.
     private static int lastFocused = 0;
     /** App of the last focused tile, so focus follows it when the app list changes. */
     private static String lastFocusedKey;
@@ -368,27 +368,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private static final long STARTUP_WALLPAPER_RETRY_MS = 1_000L;
     private int startupWallpaperRetries;
     private final Runnable retryStartupWallpaper = new Runnable() {
-        @Override
-        public void run() {
-            if (!resumed || isFinishing() || wallpaperPlayer == null
-                    || !wallpaperPlayer.needsStartupRetry()) return;
+        @Override public void run() {
+            if (!resumed || isFinishing() || wallpaperPlayer == null || !wallpaperPlayer.needsStartupRetry()) return;
             Config refreshed = Config.load(MainActivity.this);
-            if (!refreshed.wallpapers.isEmpty()) {
-                recreate();
-                return;
-            }
-            if (--startupWallpaperRetries > 0) {
-                handler.postDelayed(this, STARTUP_WALLPAPER_RETRY_MS);
-            }
+            if (!refreshed.wallpapers.isEmpty()) { recreate(); return; }
+            if (--startupWallpaperRetries > 0) handler.postDelayed(this, STARTUP_WALLPAPER_RETRY_MS);
         }
     };
-
     private void scheduleStartupWallpaperRetry() {
         if (wallpaperPlayer == null || !wallpaperPlayer.needsStartupRetry()) return;
         handler.removeCallbacks(retryStartupWallpaper);
         startupWallpaperRetries = STARTUP_WALLPAPER_RETRIES;
         handler.postDelayed(retryStartupWallpaper, STARTUP_WALLPAPER_RETRY_MS);
     }
+
     /** Refreshes the network pill when the connection changes: at boot Wi-Fi often connects after Home is shown. */
     private final ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback() {
         @Override
@@ -481,18 +474,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private String clockFormat = "system";
     private java.util.Map<Integer, String> homeHoldAppKeys = java.util.Collections.emptyMap();
 
-    /** Keep Android's own status bar visible over Home with the wallpaper showing through it. */
+    @Override
     private void configureTransparentStatusBar() {
         Window window = getWindow();
         window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
         window.setStatusBarColor(Color.TRANSPARENT);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) window.setStatusBarContrastEnforced(false);
-        View decor = window.getDecorView();
-        decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+        window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
     }
-
-    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         configureTransparentStatusBar();
@@ -1479,6 +1469,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      */
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        // A real key, not onUserInteraction: that also runs when the firmware starts Live TV over Home at power-on.
+        if (event.getAction() == KeyEvent.ACTION_DOWN) HomeKeyService.keyOnHome();
         if (homeIgnoreChannelKeys && RemoteKeys.isChannelKey(event.getKeyCode())) return true;
         // Vendor keys (TCL Netflix button, 4062) never reach the key services, only the focused window, so their
         // "hold:" entries run here too or nowhere. Only while resumed: onPause releases Home's holds, and a DOWN
@@ -2164,7 +2156,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /**
      * The glow used to be a full-screen radial GradientDrawable. On Android 10 that drawable is
-     * drawn on the CPU, so fading it for half a second redrew 1920Ã1080 every frame and the
+     * drawn on the CPU, so fading it for half a second redrew 1920×1080 every frame and the
      * highlight looked like it was running at a few frames per second. A small bitmap stretched
      * over the screen is one texture. It is painted once in white and tinted with the app's colour,
      * so changing apps neither repaints it on the CPU (about 11 ms) nor uploads it again.
@@ -2343,9 +2335,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (!showStats) stats.setVisibility(View.GONE);
     }
 
-    /** One quiet line, e.g. "CPU 8%  Â·  Memory 430 MB free  Â·  Storage 3.1 GB free". Runs off the main thread. */
+    /** One quiet line, e.g. "CPU 8%  ·  Memory 430 MB free  ·  Storage 3.1 GB free". Runs off the main thread. */
     private static void appendStat(StringBuilder line, String part) {
-        if (line.length() > 0) line.append("  Â·  ");
+        if (line.length() > 0) line.append("  ·  ");
         line.append(part);
     }
 
@@ -2555,7 +2547,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         clockColumn.addView(column, clockColumn.indexOfChild(clockRow) + 1, lp);
         // The column now wraps its texts, so they must wrap too: a match_parent TextView does not ask for a new
-        // layout when its text gets longer, and the column kept the width of the day before ("TUESDAY 27 OCTOBâ¦").
+        // layout when its text gets longer, and the column kept the width of the day before ("TUESDAY 27 OCTOB…").
         ViewGroup texts = (ViewGroup) column;
         for (int i = 0; i < texts.getChildCount(); i++) {
             View text = texts.getChildAt(i);
@@ -2783,8 +2775,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // Locale-specific day parts (app language on Android 13+).
         // Indonesian: Pagi 00-10, Siang 10-15, Sore 15-18, Malam 18-24.
         // Spain (es-ES) and Catalan: "Buenas tardes" into the evening; "Buenas noches" from 21.
-        // Latin American Spanish (es-MX, es-AR, â¦) keeps the default hours: evening strings are also
-        // Â«Buenas nochesÂ», and there Â«Buenas nochesÂ» from ~17 matches local use better than Spain's 21.
+        // Latin American Spanish (es-MX, es-AR, …) keeps the default hours: evening strings are also
+        // «Buenas noches», and there «Buenas noches» from ~17 matches local use better than Spain's 21.
         Locale locale = getResources().getConfiguration().getLocales().get(0);
         String lang = locale.getLanguage();
         String country = locale.getCountry();
@@ -3044,9 +3036,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             float room = btnWifi.getMaxWidth() - btnWifi.getPaddingStart() - btnWifi.getPaddingEnd() - iconRoom
                     - span.getSize(paint, badge, 0, badge.length(), null) - paint.measureText(" ") - 2 * density;
             String name = TextUtils.ellipsize(text, paint, Math.max(0, room), TextUtils.TruncateAt.END).toString();
-            // A long badge ("VPN Ð¾ÑÐºÐ»ÑÑÑÐ½") can leave room for a stub like "MTâ¦", which says nothing and, after
+            // A long badge ("VPN отключён") can leave room for a stub like "MT…", which says nothing and, after
             // rounding, can push the badge itself out of the pill. Show the badge alone then. On Ethernet the
-            // icon already names the link, and "Ethernet" cut to "Etheâ¦" or not depended on the font size (#961),
+            // icon already names the link, and "Ethernet" cut to "Ethe…" or not depended on the font size (#961),
             // so Ethernet always shows the icon and the badge alone.
             // The space stays even then: a line holding only the span gets no font metrics and collapses.
             boolean stub = name.length() < text.length() && name.length() < 5;
@@ -3558,7 +3550,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 if (!hdmi) sawNonHdmi = true;
                 List<TvInputInfo> devices = cecDevices.get(info.getId());
                 if (devices != null) {
-                    // "Apple TV Â· HDMI 1": the device's own name (or the one given to it or to its port in
+                    // "Apple TV · HDMI 1": the device's own name (or the one given to it or to its port in
                     // Settings > Inputs), then the port. Opening the device's input also makes it the CEC
                     // active source, which wakes it.
                     for (TvInputInfo device : devices) {

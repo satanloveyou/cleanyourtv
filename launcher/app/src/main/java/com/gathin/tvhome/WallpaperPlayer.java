@@ -67,8 +67,7 @@ final class WallpaperPlayer {
         this.root = root;
         backgroundColor = config.backgroundColor;
         files = new ArrayList<>(config.wallpapers);
-        startupFilesMissing = config.wallpaperEnabled
-                && (config.wallpaperRotationMinutes > 0 || config.wallpaper != null) && files.isEmpty();
+        startupFilesMissing = config.wallpaperEnabled && (config.wallpaperRotationMinutes > 0 || config.wallpaper != null) && files.isEmpty();
         interval = config.wallpaperRotationMinutes * 60_000L;
         bitmapConfig = config.wallpaperTrueColor ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565;
         // The dim is painted into the picture (decode), so no full-screen shade layer is drawn on every frame.
@@ -101,11 +100,6 @@ final class WallpaperPlayer {
         }
     }
 
-    /** True only when Home was created before its configured external wallpaper files became visible. */
-    boolean needsStartupRetry() {
-        return startupFilesMissing;
-    }
-
     /**
      * The picture Home opens with is decoded right here, on the main thread, as the single wallpaper always was:
      * Home's first frame already has it instead of drawing the plain colour and the picture popping in later.
@@ -135,6 +129,8 @@ final class WallpaperPlayer {
             first = WallpaperRotation.pick(playable, previous, order, random);
         }
     }
+
+    boolean needsStartupRetry() { return startupFilesMissing; }
 
     void start() {
         active = true;
@@ -212,8 +208,9 @@ final class WallpaperPlayer {
     }
 
     /**
-     * Small light text under the top-right buttons, above everything else and never focusable. It sits where the
-     * top bar ends in every layout, so it does not cover the clock, the stats line or the tiles.
+     * Small light text under the top-right buttons, above everything else and never focusable. It sits a gap
+     * below the buttons' row rather than flush against it; the offset is fixed, so a taller top bar (font scale,
+     * an extra date line) eats into that gap — and it has to stay clear of the clock block and of the tiles.
      */
     private static TextView makeCaption(Context context, FrameLayout root) {
         float dp = context.getResources().getDisplayMetrics().density;
@@ -238,7 +235,7 @@ final class WallpaperPlayer {
         }
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
-        params.topMargin = Math.round(110 * dp) - pad;
+        params.topMargin = Math.round(137 * dp) - pad;
         params.setMarginEnd(Math.round(62 * dp) - pad);
         root.addView(text, params);
         return text;
