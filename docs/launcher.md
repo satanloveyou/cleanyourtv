@@ -63,8 +63,13 @@ The launcher's own page has these rows, top to bottom:
   transitions; they may use more memory) once animations are on.
 - **Open on start**, only with `open_on_start_choice`: Off, or an app that opens instead of Home the first
   time Home comes up after the TV starts. Once per boot, so Home and Back still reach the launcher.
-- **Follow theme (reset on-TV choices)**, which clears every choice above. Pushing or resetting a theme
-  clears them too.
+- **Apple TV Mode** on or off. One built-in switch for square app tiles, 72% icons, the landscape Hero,
+  the glass Dock and matching top controls, App Library, Quick Settings and settings surfaces. It takes
+  effect when you return to Home and stays enabled after reboot. It is saved on the TV, so no theme file
+  or `config.json` is needed.
+- **Follow theme (reset on-TV choices)**, which clears every choice above, including the Apple TV Mode
+  override. The theme's own appearance is restored. Pushing or resetting a theme clears the other
+  on-TV layout choices as before.
 - **Choose default home** opens Android's home picker, and **TV system settings** the TV's own settings
   page.
 

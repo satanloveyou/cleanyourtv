@@ -101,4 +101,5 @@
     <string name="clock_format_system">النظام</string>
     <string name="clock_format_12">12 ساعة</string>
     <string name="clock_format_24">24 ساعة</string>
+    <string name="apple_tv_mode_state">وضع Apple TV: %1$s</string>
 </resources>

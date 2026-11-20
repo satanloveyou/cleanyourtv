@@ -40,6 +40,8 @@ public final class LauncherSettingsActivity extends Activity {
     private TextView advancedChoice;
     private TextView followThemeChoice;
     private TextView openOnStartChoice;
+    private TextView appleTvModeChoice;
+    private boolean appleTvMode;
     private int columns;
     private int rowsBelowDock;
     private int dockOpacity;
@@ -53,7 +55,16 @@ public final class LauncherSettingsActivity extends Activity {
         setContentView(R.layout.activity_launcher_settings);
         choices = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE);
         Config config = Config.load(this);
-        if (config.appleTvTiles) applyAppleTvSettingsStyle();
+        appleTvMode = config.appleTvTiles;
+        applyAppleTvSettingsStyle(appleTvMode);
+        appleTvModeChoice = findViewById(R.id.appleTvModeChoice);
+        appleTvModeChoice.setOnClickListener(v -> {
+            appleTvMode = !appleTvMode;
+            choices.edit().putBoolean(Config.APPLE_TV_MODE_KEY, appleTvMode).apply();
+            changed();
+            applyAppleTvSettingsStyle(appleTvMode);
+            refresh();
+        });
         View reorderChoice = findViewById(R.id.reorderChoice);
         reorderChoice.setVisibility(config.launcherSettingsButton ? View.VISIBLE : View.GONE);
         reorderChoice.setOnClickListener(v -> {
@@ -159,8 +170,11 @@ public final class LauncherSettingsActivity extends Activity {
             if (!hasOnTvChoices()) return;
             choices.edit().remove("columns").remove(Config.ROWS_BELOW_DOCK_KEY).remove("animations")
                     .remove("advanced_effects").remove(Config.WALLPAPER_CHOICE_KEY)
-                    .remove(Config.DOCK_OPACITY_KEY).remove(Config.CLOCK_FORMAT_KEY).remove(OpenOnStart.KEY).commit();
+                    .remove(Config.DOCK_OPACITY_KEY).remove(Config.CLOCK_FORMAT_KEY).remove(OpenOnStart.KEY)
+                    .remove(Config.APPLE_TV_MODE_KEY).commit();
             Config current = Config.load(this);
+            appleTvMode = current.appleTvTiles;
+            applyAppleTvSettingsStyle(appleTvMode);
             columns = current.columns;
             rowsBelowDock = current.rowsBelowDock;
             dockOpacity = current.dockOpacity;
@@ -179,22 +193,24 @@ public final class LauncherSettingsActivity extends Activity {
         else columnChoices[Math.max(0, Math.min(columns - 4, 3))].requestFocus();
     }
 
-    private void applyAppleTvSettingsStyle() {
+    private void applyAppleTvSettingsStyle(boolean enabled) {
         View content = ((android.view.ViewGroup) findViewById(android.R.id.content)).getChildAt(0);
         if (content != null) {
-            content.setBackgroundColor(0xFF0B121B);
-            applyAppleTvControlBackgrounds(content);
+            content.setBackgroundColor(enabled ? 0xFF0B121B : 0xFF101419);
+            applyAppleTvControlBackgrounds(content, enabled);
         }
     }
 
-    private void applyAppleTvControlBackgrounds(View view) {
+    private void applyAppleTvControlBackgrounds(View view, boolean enabled) {
         if (view.isFocusable() && view instanceof TextView) {
-            view.setBackgroundResource(R.drawable.apple_tv_settings_choice_bg);
+            view.setBackgroundResource(enabled ? R.drawable.apple_tv_settings_choice_bg : R.drawable.settings_choice_bg);
             ((TextView) view).setTextColor(Color.WHITE);
         }
         if (view instanceof android.view.ViewGroup) {
             android.view.ViewGroup group = (android.view.ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) applyAppleTvControlBackgrounds(group.getChildAt(i));
+            for (int i = 0; i < group.getChildCount(); i++) {
+                applyAppleTvControlBackgrounds(group.getChildAt(i), enabled);
+            }
         }
     }
 
@@ -337,6 +353,8 @@ public final class LauncherSettingsActivity extends Activity {
                 "none".equals(wallpaperCurrent) ? getString(R.string.wallpaper_none)
                         : wallpaperCurrent != null ? wallpaperCurrent
                         : getString(R.string.wallpaper_theme_default)));
+        appleTvModeChoice.setText(getString(R.string.apple_tv_mode_state,
+                getString(appleTvMode ? R.string.on : R.string.off)));
         openOnStartChoice.setText(getString(R.string.open_on_start_state, openOnStartLabel()));
         followThemeChoice.setSelected(!hasOnTvChoices());
     }
@@ -345,7 +363,8 @@ public final class LauncherSettingsActivity extends Activity {
         return choices.contains("columns") || choices.contains(Config.ROWS_BELOW_DOCK_KEY)
                 || choices.contains("animations") || choices.contains("advanced_effects")
                 || choices.contains(Config.WALLPAPER_CHOICE_KEY) || choices.contains(Config.DOCK_OPACITY_KEY)
-                || choices.contains(Config.CLOCK_FORMAT_KEY) || choices.contains(OpenOnStart.KEY);
+                || choices.contains(Config.CLOCK_FORMAT_KEY) || choices.contains(OpenOnStart.KEY)
+                || choices.contains(Config.APPLE_TV_MODE_KEY);
     }
 
     private void open(Intent intent) {

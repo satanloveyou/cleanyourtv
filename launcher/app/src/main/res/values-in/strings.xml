@@ -113,4 +113,5 @@
     <string name="clock_format_system">Sistem</string>
     <string name="clock_format_12">12 jam</string>
     <string name="clock_format_24">24 jam</string>
+    <string name="apple_tv_mode_state">Mode Apple TV: %1$s</string>
 </resources>

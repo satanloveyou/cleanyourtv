@@ -155,4 +155,5 @@
     <string name="clock_format_system">Системний</string>
     <string name="clock_format_12">12-годинний</string>
     <string name="clock_format_24">24-годинний</string>
+    <string name="apple_tv_mode_state">Режим Apple TV: %1$s</string>
 </resources>

@@ -40,6 +40,7 @@ final class Config {
     static final String FILE_NAME = "config.json";
     static final String WALLPAPER_NAME = "wallpaper.jpg";
     static final String SETTINGS_NAME = "launcher_settings";
+    static final String APPLE_TV_MODE_KEY = "apple_tv_mode";
     static final String ROWS_BELOW_DOCK_KEY = "rows_below_dock";
     static final String WALLPAPER_CHOICE_KEY = "wallpaper_choice";
     static final String DOCK_OPACITY_KEY = "dock_opacity";
@@ -53,6 +54,11 @@ final class Config {
     /** True when Launcher settings changed something since Home was built at revision {@code seen}. */
     static boolean settingsChanged(long seen, long current) {
         return seen != current;
+    }
+
+    /** An explicit on-TV choice wins; otherwise the current theme decides the initial mode. */
+    static boolean resolveAppleTvMode(boolean hasOverride, boolean savedValue, boolean themeValue) {
+        return hasOverride ? savedValue : themeValue;
     }
     private static final String THEME_REVISION_NAME = "theme_revision";
     private static final String THEME_SIGNATURE_KEY = "theme_signature";
@@ -681,6 +687,25 @@ final class Config {
         SharedPreferences choices = ctx.getSharedPreferences(SETTINGS_NAME, Context.MODE_PRIVATE);
         // Unmounted storage looks like a theme reset; compare only once the file is readable.
         if (mounted) syncThemeChoices(choices, dir, file);
+        // Apple TV Mode is a local preference, not a theme file. It survives theme changes and reboots;
+        // Follow theme removes the preference so the theme's apple_tv_tiles value can take over again.
+        boolean appleTvMode = resolveAppleTvMode(choices.contains(APPLE_TV_MODE_KEY),
+                choices.getBoolean(APPLE_TV_MODE_KEY, false), appleTvTiles);
+        appleTvTiles = appleTvMode;
+        if (appleTvMode) {
+            uniformTiles = true;
+            cinematic = true;
+            dockTitle = true;
+            dockRow = true;
+            singleRow = false;
+            dockBand = true;
+            dockGlass = true;
+            dockEvenPadding = true;
+            iconOnlyButtons = true;
+            iconOnlyInputs = true;
+            iconOnlyVpn = true;
+            cinematicWhiteFocus = true;
+        }
         int chosenColumns = choices.getInt("columns", columns);
         if (chosenColumns >= 4 && chosenColumns <= 7) columns = chosenColumns;
         int chosenRows = choices.getInt(ROWS_BELOW_DOCK_KEY, rowsBelow);

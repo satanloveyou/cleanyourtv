@@ -112,4 +112,5 @@
     <string name="clock_format_system">Systém</string>
     <string name="clock_format_12">12hodinové</string>
     <string name="clock_format_24">24hodinové</string>
+    <string name="apple_tv_mode_state">Režim Apple TV: %1$s</string>
 </resources>
