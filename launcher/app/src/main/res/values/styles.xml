@@ -24,11 +24,6 @@
         <item name="android:focusable">true</item>
         <item name="android:clickable">true</item>
     </style>
-    <style name="Theme.TvHome.Home" parent="Theme.TvHome">
-        <item name="android:windowFullscreen">false</item>
-        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-    </style>
     <style name="TopButton" parent="TopButtonBase" />
 
     <!-- Icon-only pill: a 42dp circle (pill_bg's 21dp corners) with the 22dp icon centred by even padding. Give it a

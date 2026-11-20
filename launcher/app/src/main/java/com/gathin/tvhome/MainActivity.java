@@ -381,7 +381,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         startupWallpaperRetries = STARTUP_WALLPAPER_RETRIES;
         handler.postDelayed(retryStartupWallpaper, STARTUP_WALLPAPER_RETRY_MS);
     }
-
     /** Refreshes the network pill when the connection changes: at boot Wi-Fi often connects after Home is shown. */
     private final ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback() {
         @Override
@@ -482,6 +481,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) window.setStatusBarContrastEnforced(false);
         window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
     }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         configureTransparentStatusBar();
