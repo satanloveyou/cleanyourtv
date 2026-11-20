@@ -316,13 +316,13 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             if (!seen.add(pkg + '\n' + label)) continue;
             Drawable banner = null;
             // uniform_tiles draws the icon, so an app's banner is never loaded. A module card keeps its banner.
-            if (!(uniformTiles && card == null)) {
+            if (!(uniformTiles && !appleTvTiles && card == null)) {
                 banner = bundledBanner(appBanners.get(pkg));
                 if (banner == null) banner = iconTiles.contains(pkg) ? iconBanner(ri.loadIcon(pm)) : loadBanner(pm, ri);
             }
             // The icon is only drawn (and sampled for the glow) when there is no banner, so a tile with a
             // banner skips loading and decoding it.
-            Drawable icon = banner == null ? ri.loadIcon(pm) : null;
+            Drawable icon = banner == null || appleTvTiles ? ri.loadIcon(pm) : null;
             if (card != null) {
                 fresh.add(new Entry(Entry.CARD, label, component, banner, icon, card.caption, card.accent));
             } else {
@@ -509,14 +509,15 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         h.banner.setScaleY(focused && advancedEffects && !appleTvTiles ? 1.035f : 1f);
         // A fully opaque banner covers the whole card (centerCrop), so the card's own fill under it is drawn for
         // nothing on every frame; keep it under banners with transparent parts and under icon tiles.
-        h.card.setBackground(e.banner != null && e.banner.getOpacity() == PixelFormat.OPAQUE ? null : h.cardBackground);
-        if (uniformTiles && e.banner == null) {
+        boolean showBanner = e.banner != null && (!appleTvTiles || e.kind == Entry.CARD);
+        h.card.setBackground(showBanner && e.banner.getOpacity() == PixelFormat.OPAQUE ? null : h.cardBackground);
+        if (uniformTiles && !showBanner) {
             if (e.backdrop == null) e.backdrop = backdrop(e.icon, ambientColorAt(position));
             GradientDrawable tile = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, e.backdrop);
             if (appleTvTiles) tile.setCornerRadius(cornerRadius(h.card.getWidth(), ctx.getResources().getDisplayMetrics().density, true));
             h.card.setBackground(tile);
         }
-        if (e.banner != null) {
+        if (showBanner) {
             h.icon.setImageDrawable(null);
             h.banner.setImageDrawable(e.banner);
             h.banner.setVisibility(View.VISIBLE);
@@ -697,6 +698,13 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return e.banner != null ? e.banner : e.icon;
     }
 
+    /** A real app or module-card banner is suitable for the full-size Apple TV Hero. */
+    boolean hasBannerAt(int position) {
+        if (position < 0 || position >= items.size()) return false;
+        Entry e = items.get(position);
+        return e.banner != null && !iconTiles.contains(e.pkg);
+    }
+
     float focusScale() {
         return !animations ? 1f : appleTvTiles ? 1.09f : advancedEffects ? 1.12f : 1.10f;
     }
@@ -710,7 +718,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (position < 0 || position >= items.size()) return 0xFF444444;
         Entry e = items.get(position);
         if (e.ambient == 0) {
-            e.ambient = uniformTiles && e.banner == null ? dominantColor(e.icon) : vividColor(e.banner != null ? e.banner : e.icon);
+            e.ambient = uniformTiles && (appleTvTiles || e.banner == null)
+                    ? dominantColor(e.icon) : vividColor(e.banner != null ? e.banner : e.icon);
         }
         return e.ambient;
     }

@@ -171,6 +171,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private float heroArtAlpha = 0.5f;
     /** Softened artwork per app (HeroArt, about 5 KB each), made the first time its dock tile is focused. */
     private final Map<String, Bitmap> heroArtCache = new HashMap<>();
+    /** Resource-backed copies of real app banners for the Apple TV full-size Hero. */
+    private final Map<String, Drawable> heroArtworkCache = new HashMap<>();
     /** The app whose artwork heroArt shows, so focusing it again only fades it back in. */
     private String heroArtKey;
     /** The focus glow's colour while the cinematic shelf tints it, 0 for plain white glass. */
@@ -565,6 +567,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroMeta = findViewById(R.id.heroMeta);
         heroDots = findViewById(R.id.heroDots);
         heroArt = findViewById(R.id.heroArt);
+        if (cfg.appleTvTiles) heroArt.setScaleType(ImageView.ScaleType.CENTER_CROP);
         cinematic = cfg.cinematicHome;
         glowStyle = cfg.glowStyle;
         heroDotsShown = cfg.cinematicDots;
@@ -1293,6 +1296,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         final List<Cards.Card> none = Collections.emptyList();
         // An updated app may bring new artwork; the backdrop is cheap to make again.
         heroArtCache.clear();
+        heroArtworkCache.clear();
         heroArtKey = null;
         // One LEANBACK query for both the tiles and the card checks.
         final List<ResolveInfo> leanback = getPackageManager().queryIntentActivities(
@@ -1393,6 +1397,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.setAdapter(null);
         grid.getRecycledViewPool().clear();
         heroArtCache.clear();
+        heroArtworkCache.clear();
         heroArtKey = null;
         wallpaperPlayer.releaseForMemoryPressure();
         tileRefresh.invalidate();
@@ -2088,12 +2093,43 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             fadeHeroArt(420);
             return;
         }
+
+        // Apple TV mode uses the app's real landscape banner as full-size Hero artwork when present.
+        // A new Drawable wrapper shares its ConstantState, avoiding mutation of the tile's Drawable
+        // and avoiding a second decoded bitmap. Icon-only apps retain the softened low-cost fallback.
+        Drawable fullArtwork = null;
+        if (appleTvTiles && adapter.hasBannerAt(position)) {
+            fullArtwork = heroArtworkCache.get(key);
+            if (fullArtwork == null) {
+                Drawable source = adapter.artworkAt(position);
+                Drawable.ConstantState state = source == null ? null : source.getConstantState();
+                if (state != null) {
+                    fullArtwork = state.newDrawable().mutate();
+                    heroArtworkCache.put(key, fullArtwork);
+                }
+            }
+        }
+
+        heroArtKey = key;
+        if (fullArtwork != null) {
+            final Drawable next = fullArtwork;
+            if (!animations || reducedMotion || heroArt.getAlpha() == 0f) {
+                heroArt.setImageDrawable(next);
+                fadeHeroArt(600);
+                return;
+            }
+            heroArt.animate().alpha(0f).setDuration(140).withEndAction(() -> {
+                heroArt.setImageDrawable(next);
+                heroArt.animate().alpha(heroArtAlpha).setDuration(420).start();
+            }).start();
+            return;
+        }
+
         Bitmap art = heroArtCache.get(key);
         if (art == null) {
             art = HeroArt.from(adapter.artworkAt(position));
             if (art != null) heroArtCache.put(key, art);
         }
-        heroArtKey = key;
         final Bitmap next = art;
         if (!animations || reducedMotion || heroArt.getAlpha() == 0f) {
             heroArt.setImageBitmap(next);
