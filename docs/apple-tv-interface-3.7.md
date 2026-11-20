@@ -148,6 +148,8 @@ Implemented on the feature branch:
 - Restyled Launcher Settings focusable choices with a cool neutral focus treatment rather than the legacy green selector.
 - Kept header labels and icons white while focused so the translucent pill highlight does not turn their ink dark.
 - All of these changes are guarded by `apple_tv_tiles`; other themes keep the legacy surfaces.
+- Reduced header clock/date emphasis and made the top-control focus scale more restrained so the Hero remains the first visual priority.
+- Tuned the Dock's light-glass gradient separately for Apple TV mode; no extra render pass or live blur was introduced.
 
 ### Preview theme overlay
 

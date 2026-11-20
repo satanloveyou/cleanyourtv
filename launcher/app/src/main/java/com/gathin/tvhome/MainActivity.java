@@ -578,6 +578,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // still follows the dock.
         if (!cfg.dockTitle) hero.setVisibility(View.GONE);
         greeting = findViewById(R.id.greeting);
+        if (appleTvTiles) {
+            // Keep the clock legible from the sofa, but let the featured artwork own the screen.
+            ((TextView) findViewById(R.id.clock)).setTextSize(46f);
+            ((TextView) findViewById(R.id.ampm)).setTextSize(12f);
+            ((TextView) findViewById(R.id.date)).setTextSize(13f);
+            greeting.setTextSize(10f);
+            greeting.setLetterSpacing(0.16f);
+        }
         clockBlock = findViewById(R.id.leftBlock);
         clockRefresh = new ClockRefresh(clockBlock);
         greetingColor = greeting.getCurrentTextColor();
@@ -960,8 +968,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             pills.addAll(topAppButtons);
             for (View button : pills) {
                 button.setOnFocusChangeListener((view, focused) -> view.animate()
-                        .scaleX(focused ? 1.04f : 1f).scaleY(focused ? 1.04f : 1f)
-                        .setDuration(reducedMotion ? Motion.REDUCED_MS : 160).start());
+                        .scaleX(focused ? (appleTvTiles ? 1.03f : 1.04f) : 1f)
+                        .scaleY(focused ? (appleTvTiles ? 1.03f : 1.04f) : 1f)
+                        .setDuration(reducedMotion ? Motion.REDUCED_MS : appleTvTiles ? 180 : 160).start());
             }
         }
         if (festive) applyFestiveSkin((TextView) btnInputs, (TextView) btnSettings);
